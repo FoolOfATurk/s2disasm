@@ -2,6 +2,45 @@
 ; Equates section - Names for variables.
 
 ; ---------------------------------------------------------------------------
+; Mega CD stuff
+; ---------------------------------------------------------------------------
+
+CdBootRom 		=	$400000			; Main-CPU boot ROM
+CdPrgRam 		=	$420000			; PRG-RAM window
+CdUserPrgOffset		=	$006000			; Offset that the user program gets copied to
+CdWordRam 		=	$600000			; WORD-RAM window
+
+HwVersion 		=	$A10001			; Console region, version, etc.
+
+CdRegisters		=	$A12000	
+
+CdSubCtrl 		=	CdRegisters+$00	; Sub-CPU reset
+CdBusCtrl		=	CdRegisters+$01	; Sub-CPU Bus Request
+CdMemCtrl 		=	CdRegisters+$02	; Mega CD memory mode
+CdMemBankCtrl		=	CdRegisters+$03	; Mega CD Bank
+
+CdCommMainflag		=	CdRegisters+$0E
+CdCommSubflag		=	CdRegisters+$0F
+
+CdCommMain1		=	CdRegisters+$10	; Main-CPU to Sub-CPU port #1
+CdCommMain2		=	CdRegisters+$12	; Main-CPU to Sub-CPU port #2
+CdCommMain3		=	CdRegisters+$14	; Main-CPU to Sub-CPU port #3
+CdCommMain4		=	CdRegisters+$16	; Main-CPU to Sub-CPU port #4
+CdCommMain5		=	CdRegisters+$18	; Main-CPU to Sub-CPU port #5
+CdCommMain6		=	CdRegisters+$1A	; Main-CPU to Sub-CPU port #6
+CdCommMain7		=	CdRegisters+$1C	; Main-CPU to Sub-CPU port #7
+CdCommMain8		=	CdRegisters+$1E	; Main-CPU to Sub-CPU port #8
+	
+CdCommSub1		=	CdRegisters+$20	; Sub-CPU to Main-CPU port #1
+CdCommSub2		=	CdRegisters+$22	; Sub-CPU to Main-CPU port #2
+CdCommSub3		=	CdRegisters+$24	; Sub-CPU to Main-CPU port #3
+CdCommSub4		=	CdRegisters+$26	; Sub-CPU to Main-CPU port #4
+CdCommSub5		=	CdRegisters+$28	; Sub-CPU to Main-CPU port #5
+CdCommSub6		=	CdRegisters+$2A	; Sub-CPU to Main-CPU port #6
+CdCommSub7		=	CdRegisters+$2C	; Sub-CPU to Main-CPU port #7
+CdCommSub8		=	CdRegisters+$2E	; Sub-CPU to Main-CPU port #8
+
+; ---------------------------------------------------------------------------
 ; size variables - you'll get an informational error if you need to change these...
 ; they are all in units of bytes
 Size_of_DAC_samples =		$2F00
@@ -966,11 +1005,6 @@ object_display_list_size_bits =		7
 object_display_list_size =		1<<object_display_list_size_bits ; How big a list is
 total_object_display_lists_bits =	3
 total_object_display_lists =		1<<total_object_display_lists_bits ; How many lists there are
-
-; ---------------------------------------------------------------------------
-; I run the main 68k RAM addresses through this function
-; to let them work in both 16-bit and 32-bit addressing modes.
-ramaddr function x,-(-x)&$FFFFFFFF
 
 ; ---------------------------------------------------------------------------
 ; RAM variables - General

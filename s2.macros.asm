@@ -121,6 +121,26 @@ finishBank macro
 	endif
     endm
 
+spinWaitTstCmp macro addr, cond
+-
+	tst.ATTRIBUTE addr
+	!cond.s -
+	endm
+
+spinWaitTst macro addr
+	spinWaitTstCmp.ATTRIBUTE addr, bne
+	endm
+
+spinWaitCmp macro check, x, y, cond
+-
+	!check x, y
+	!cond.s	-
+	endm
+
+spinWait macro check, x, y
+	spinWaitCmp check, x, y, bne
+	endm
+
 ; macro to replace the destination with its absolute value
 abs macro destination
 	tst.ATTRIBUTE	destination
@@ -279,3 +299,8 @@ childObjectData macro objoff, objectID, subtype
 	dc.w	objoff
 	dc.b	objectID, subtype
 	endm
+
+; ---------------------------------------------------------------------------
+; I run the main 68k RAM addresses through this function
+; to let them work in both 16-bit and 32-bit addressing modes.
+ramaddr function x,-(-x)&$FFFFFFFF

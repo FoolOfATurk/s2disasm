@@ -16,39 +16,7 @@
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; ASSEMBLY OPTIONS:
-;
-gameRevision = 1
-;	| If 0, a REV00 ROM is built
-;	| If 1, a REV01 ROM is built, which contains some fixes
-;	| If 2, a (theoretical) REV02 ROM is built, which contains even more fixes
-padToPowerOfTwo = 1
-;	| If 1, pads the end of the ROM to the next power of two bytes (for real hardware)
-;
-fixBugs = 0
-;	| If 1, enables all bug-fixes
-;	| See also the 'FixDriverBugs' flag in 's2.sounddriver.asm'
-;	| See also the 'FixMusicAndSFXDataBugs' flag in 'build.lua'
-allOptimizations = 0
-;	| If 1, enables all optimizations
-;
-skipChecksumCheck = 0
-;	| If 1, disables the slow bootup checksum calculation
-;
-zeroOffsetOptimization = 0|allOptimizations
-;	| If 1, makes a handful of zero-offset instructions smaller
-;
-removeJmpTos = 0|(gameRevision=2)|allOptimizations
-;	| If 1, many unnecessary JmpTos are removed, improving performance
-;
-addsubOptimize = 0|(gameRevision=2)|allOptimizations
-;	| If 1, some add/sub instructions are optimized to addq/subq
-;
-relativeLea = 0|(gameRevision<>2)|allOptimizations
-;	| If 1, makes some instructions use pc-relative addressing, instead of absolute long
-;
-useFullWaterTables = 0
-;	| If 1, zone offset tables for water levels cover all level slots instead of only slots 8-$F
-;	| Set to 1 if you've shifted level IDs around or you want water in levels with a level slot below 8
+	include "s2.options.asm"
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; AS-specific macros and assembler settings
@@ -163,7 +131,7 @@ Header:
 ; word_18E
 Checksum:
 	dc.w $D951		; Checksum (patched later if incorrect)
-	dc.b "J               " ; I/O Support
+	dc.b "JC              " ; I/O Support
 	dc.l StartOfRom		; Start address of ROM
 ; dword_1A4
 ROMEndLoc:
@@ -265,7 +233,7 @@ PSGInitLoop:
 	move	#$2700,sr	; set the sr
  ; loc_292:
 PortC_OK: ;;
-	bra.s	GameProgram	; Branch to game program.
+	bra.w	GameProgram	; Branch to game program.
 ; ===========================================================================
 ; byte_294:
 SetupValues:
@@ -352,6 +320,7 @@ PSGInitValues_End:
 ; ===========================================================================
 
 	even
+	include "s2.megacd.asm"
 ; loc_300:
 GameProgram:
 	tst.w	(VDP_control_port).l
@@ -410,6 +379,19 @@ GameClrRAM:
 	bsr.w	VDPSetupGame
 	bsr.w	JmpTo_SoundDriverLoad
 	bsr.w	JoypadInit
+
+	bsr.w	FindMCDBIOS	; if bios found, clear carry and load pointer to it
+	bcs.w	skipMCD		; Error if no MCD is found
+
+	lea	(SubCPU), a1
+	move.l	#SubCPU_Size, d0
+	bsr.w	InitSubCPU
+	bne.w	ErrorTrap	; Error if failed
+
+	bsr.w	SyncMCD
+	bsr.w	skipMCD
+
+skipMCD:
 	move.b	#GameModeID_SegaScreen,(Game_Mode).w ; set Game Mode to Sega Screen
 ; loc_394:
 MainGameLoop:
@@ -470,6 +452,7 @@ LevelSelectMenu: ;;
 ; vertical and horizontal interrupt handlers
 ; VERTICAL INTERRUPT HANDLER:
 V_Int:
+	SendMCDInt2	; Sub CPU boot requires that we send it level 2 interrupt requests.
 	movem.l	d0-a6,-(sp)
 	tst.b	(Vint_routine).w
 	beq.w	Vint_Lag
@@ -92561,6 +92544,13 @@ Sound6F:	include "sound/sfx/EF - Large Laser.asm"
 Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 
 	finishBank
+
+SubCPU:
+		binclude "SubCPU/subcpu.bin"
+		even
+SubCPU_End:
+
+SubCPU_Size = SubCPU_End-SubCPU
 
 ; end of 'ROM'
 	if padToPowerOfTwo && (*)&(*-1)
